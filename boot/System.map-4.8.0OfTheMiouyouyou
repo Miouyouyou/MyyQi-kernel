@@ -74573,7 +74573,7 @@ c0fae920 T __security_initcall_start
 c0fae924 T __initramfs_start
 c0fae924 t __irf_start
 c0fae924 T __security_initcall_end
-c0fae9aa t __irf_end
+c0fae9a9 t __irf_end
 c0fae9b0 T __initramfs_size
 c0faf000 D __per_cpu_load
 c0faf000 D __per_cpu_start
