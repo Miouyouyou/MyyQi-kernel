@@ -26,7 +26,7 @@ git commit -a -s -S -m "First try of a MiQi compatible kernel build"
 git remote add origin https://github.com/Miouyouyou/MyyQi-kernel.git
 git push -u origin master
 ```
-The user [peba](http://bitkistl.com/), on the [mqmaker's forums](https://forum.mqmaker.com/t/mainline-kernel-compilation/572/9), were able to boot kernels built that way successfully on a [MiQi board](https://mqmaker.com/doc/introduction-to-miqi/) using a Debian 9 distribution.
+The user [peba](http://www.bitkistl.com/), on the [mqmaker's forums](https://forum.mqmaker.com/t/mainline-kernel-compilation/572/9), were able to boot kernels built that way successfully on a [MiQi board](https://mqmaker.com/doc/introduction-to-miqi/) using a Debian 9 distribution.
 
 ![Peba's Debian system using a 4.8.0 kernel built that way](./img/peba-debian-miqi-using-4-8-0-OfTheMiouyouyou-kernel.png)
 
