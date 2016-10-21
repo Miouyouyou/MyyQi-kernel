@@ -1,0 +1,716 @@
+From 3ce5d6c2f63b93666d5bc18ce7684218af40a9cb Mon Sep 17 00:00:00 2001
+From: Myy <myy@miouyouyou.fr>
+Date: Fri, 21 Oct 2016 00:17:51 +0000
+Subject: [PATCH 1/1] Post-Mali additions
+
+---
+ drivers/base/Kconfig                               |   2 +
+ drivers/base/Makefile                              |   1 +
+ drivers/gpu/Makefile                               |   2 +-
+ drivers/gpu/arm/midgard/platform/rk/Kbuild         |  25 ++
+ drivers/gpu/arm/midgard/platform/rk/custom_log.h   | 208 ++++++++++++++++
+ .../platform/rk/mali_kbase_config_platform.h       |  88 +++++++
+ .../arm/midgard/platform/rk/mali_kbase_config_rk.c | 263 +++++++++++++++++++++
+ .../gpu/arm/midgard/platform/rk/mali_kbase_rk.h    |  30 +++
+ drivers/video/Kconfig                              |   2 +
+ 9 files changed, 620 insertions(+), 1 deletion(-)
+ create mode 100755 drivers/gpu/arm/midgard/platform/rk/Kbuild
+ create mode 100755 drivers/gpu/arm/midgard/platform/rk/custom_log.h
+ create mode 100644 drivers/gpu/arm/midgard/platform/rk/mali_kbase_config_platform.h
+ create mode 100755 drivers/gpu/arm/midgard/platform/rk/mali_kbase_config_rk.c
+ create mode 100644 drivers/gpu/arm/midgard/platform/rk/mali_kbase_rk.h
+
+diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+index 98504ec..f9c9c3b 100644
+--- a/drivers/base/Kconfig
++++ b/drivers/base/Kconfig
+@@ -324,4 +324,6 @@ config CMA_ALIGNMENT
+ 
+ endif
+ 
++source "drivers/base/kds/Kconfig"
++
+ endmenu
+diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+index 2609ba2..9212614 100644
+--- a/drivers/base/Makefile
++++ b/drivers/base/Makefile
+@@ -23,6 +23,7 @@ obj-$(CONFIG_SOC_BUS) += soc.o
+ obj-$(CONFIG_PINCTRL) += pinctrl.o
+ obj-$(CONFIG_DEV_COREDUMP) += devcoredump.o
+ obj-$(CONFIG_GENERIC_MSI_IRQ_DOMAIN) += platform-msi.o
++obj-$(CONFIG_KDS) += kds/
+ 
+ ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+ 
+diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
+index e9ed439..66386b4 100644
+--- a/drivers/gpu/Makefile
++++ b/drivers/gpu/Makefile
+@@ -2,5 +2,5 @@
+ # taken to initialize them in the correct order. Link order is the only way
+ # to ensure this currently.
+ obj-$(CONFIG_TEGRA_HOST1X)	+= host1x/
+-obj-y			+= drm/ vga/
++obj-y			+= drm/ vga/ arm/
+ obj-$(CONFIG_IMX_IPUV3_CORE)	+= ipu-v3/
+diff --git a/drivers/gpu/arm/midgard/platform/rk/Kbuild b/drivers/gpu/arm/midgard/platform/rk/Kbuild
+new file mode 100755
+index 0000000..700fd43
+--- /dev/null
++++ b/drivers/gpu/arm/midgard/platform/rk/Kbuild
+@@ -0,0 +1,25 @@
++#
++# (C) COPYRIGHT 2012-2013 ARM Limited. All rights reserved.
++#
++# This program is free software and is provided to you under the terms of the
++# GNU General Public License version 2 as published by the Free Software
++# Foundation, and any use by you of this program is subject to the terms
++# of such GNU licence.
++#
++# A copy of the licence is included with the program, and can also be obtained
++# from Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
++# Boston, MA  02110-1301, USA.
++#
++#
++
++ccflags-y += -I$(srctree)/drivers/staging/android
++
++ifeq ($(CONFIG_MALI_MIDGARD),y)
++obj-y += mali_kbase_config_rk.o
++# obj-y += mali_kbase_dvfs.o
++# obj-y += mali_kbase_platform.o
++else ifeq ($(CONFIG_MALI_MIDGARD),m)
++SRC += platform/rk/mali_kbase_config_rk.c
++# SRC += platform/rk/mali_kbase_dvfs.c
++# SRC += platform/rk/mali_kbase_platform.c
++endif
+diff --git a/drivers/gpu/arm/midgard/platform/rk/custom_log.h b/drivers/gpu/arm/midgard/platform/rk/custom_log.h
+new file mode 100755
+index 0000000..646fe37
+--- /dev/null
++++ b/drivers/gpu/arm/midgard/platform/rk/custom_log.h
+@@ -0,0 +1,208 @@
++/*  ----------------------------------------------------------------------------
++ *  File:   custom_log.h
++ *
++ *  Desc:   ChenZhen 偏好的 log 输出的定制实现.
++ *
++ *          --------------------------------------------------------------------
++ *          < 习语 和 缩略语 > :
++ *
++ *          --------------------------------------------------------------------
++ *  Usage:
++ *
++ *  Note:
++ *
++ *  Author: ChenZhen
++ *
++ *  ----------------------------------------------------------------------------
++ *  Version:
++ *          v1.0
++ *  ----------------------------------------------------------------------------
++ *  Log:
++	----Fri Nov 19 15:20:28 2010            v1.0
++ *
++ *  ----------------------------------------------------------------------------
++ */
++
++#ifndef __CUSTOM_LOG_H__
++#define __CUSTOM_LOG_H__
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++/* -----------------------------------------------------------------------------
++ *  Include Files
++ * -----------------------------------------------------------------------------
++ */
++#include <linux/kernel.h>
++#include <linux/printk.h>
++
++/* -----------------------------------------------------------------------------
++ *  Macros Definition
++ * -----------------------------------------------------------------------------
++ */
++
++/** 若下列 macro 有被定义, 才 使能 log 输出. */
++/* #define ENABLE_DEBUG_LOG */
++
++/*----------------------------------------------------------------------------*/
++
++#ifdef ENABLE_VERBOSE_LOG
++/** Verbose log. */
++#define V(fmt, args...) \
++	pr_debug("V : [File] : %s; [Line] : %d; [Func] : %s(); " fmt \
++			"\n",	\
++		__FILE__,	\
++		__LINE__,	\
++		__func__,	\
++		## args)
++#else
++#define  V(...)  ((void)0)
++#endif
++
++#ifdef ENABLE_DEBUG_LOG
++/** Debug log. */
++#define D(fmt, args...) \
++	pr_info("D : [File] : %s; [Line] : %d; [Func] : %s(); " fmt \
++			"\n",	\
++		__FILE__,	\
++		__LINE__,	\
++		__func__,	\
++		## args)
++#else
++#define  D(...)  ((void)0)
++#endif
++
++#define I(fmt, args...) \
++	pr_info("I : [File] : %s; [Line] : %d; [Func] : %s(); " fmt \
++			"\n", \
++		__FILE__, \
++		__LINE__, \
++		__func__, \
++		## args)
++
++#define W(fmt, args...) \
++	pr_warn("W : [File] : %s; [Line] : %d; [Func] : %s(); " \
++			fmt "\n", \
++		__FILE__, \
++		__LINE__, \
++		__func__, \
++		## args)
++
++#define E(fmt, args...) \
++	pr_err("E : [File] : %s; [Line] : %d; [Func] : %s(); " fmt \
++			"\n", \
++		__FILE__, \
++		__LINE__, \
++		__func__, \
++		## args)
++
++/*-------------------------------------------------------*/
++
++/** 使用 D(), 以十进制的形式打印变量 'var' 的 value. */
++#define D_DEC(var)  D(#var " = %d.", var)
++
++#define E_DEC(var)  E(#var " = %d.", var)
++
++/** 使用 D(), 以十六进制的形式打印变量 'var' 的 value. */
++#define D_HEX(var)  D(#var " = 0x%x.", var)
++
++#define E_HEX(var)  E(#var " = 0x%x.", var)
++
++/**
++ * 使用 D(), 以十六进制的形式,
++ * 打印指针类型变量 'ptr' 的 value.
++ */
++#define D_PTR(ptr)  D(#ptr " = %p.", ptr)
++
++#define E_PTR(ptr)  E(#ptr " = %p.", ptr)
++
++/** 使用 D(), 打印 char 字串. */
++#define D_STR(p_str) \
++do { \
++	if (!p_str) { \
++		D(#p_str " = NULL."); \
++	else \
++		D(#p_str " = '%s'.", p_str); \
++} while (0)
++
++#define E_STR(p_str) \
++do { \
++	if (!p_str) \
++		E(#p_str " = NULL."); \
++	else \
++		E(#p_str " = '%s'.", p_str); \
++} while (0)
++
++#ifdef ENABLE_DEBUG_LOG
++/**
++ * log 从 'p_start' 地址开始的 'len' 个字节的数据.
++ */
++#define D_MEM(p_start, len) \
++do { \
++	int i = 0; \
++	char *p = (char *)(p_start); \
++	D("dump memory from addr of '" #p_start "', from %p, length %d' : ", \
++		(p_start), \
++		(len)); \
++	pr_debug("\t\t"); \
++	for (i = 0; i < (len); i++) \
++		pr_debug("0x%02x, ", p[i]); \
++	pr_debug("\n"); \
++} while (0)
++#else
++#define  D_MEM(...)  ((void)0)
++#endif
++
++/*-------------------------------------------------------*/
++
++/**
++ * 在特定条件下, 判定 error 发生,
++ * 将变量 'ret_var' 设置 'err_code',
++ * log 输出对应的 Error Caution,
++ * 然后跳转 'label' 指定的代码处执行.
++ * @param msg
++ *	纯字串形式的提示信息.
++ * @param ret_var
++ *	标识函数执行状态或者结果的变量,
++ *	将被设置具体的 Error Code.
++ *	通常是 'ret' or 'result'.
++ * @param err_code
++ *	表征特定 error 的常数标识,
++ *	通常是 宏的形态.
++ * @param label
++ *      程序将要跳转到的错误处理代码的标号,
++ *      通常就是 'EXIT'.
++ * @param args...
++ *      对应 'msg_fmt' 实参中,
++ *      '%s', '%d', ... 等转换说明符的具体可变长实参.
++ */
++#define SET_ERROR_AND_JUMP(msg_fmt, ret_var, err_code, label, args...) \
++do { \
++	E("To set '" #ret_var "' to %d('" #err_code "'), because : " msg_fmt, \
++		(err_code), \
++		## args); \
++	(ret_var) = (err_code); \
++	goto label; \
++} while (0)
++
++/* -----------------------------------------------------------------------------
++ *  Types and Structures Definition
++ * -----------------------------------------------------------------------------
++ */
++
++/* -----------------------------------------------------------------------------
++ *  Global Functions' Prototype
++ * -----------------------------------------------------------------------------
++ */
++
++/* -----------------------------------------------------------------------------
++ *  Inline Functions Implementation
++ * -----------------------------------------------------------------------------
++ */
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* __CUSTOM_LOG_H__ */
+diff --git a/drivers/gpu/arm/midgard/platform/rk/mali_kbase_config_platform.h b/drivers/gpu/arm/midgard/platform/rk/mali_kbase_config_platform.h
+new file mode 100644
+index 0000000..07c5b6f
+--- /dev/null
++++ b/drivers/gpu/arm/midgard/platform/rk/mali_kbase_config_platform.h
+@@ -0,0 +1,88 @@
++/*
++ *
++ * (C) COPYRIGHT 2014-2015 ARM Limited. All rights reserved.
++ *
++ * This program is free software and is provided to you under the terms of the
++ * GNU General Public License version 2 as published by the Free Software
++ * Foundation, and any use by you of this program is subject to the terms
++ * of such GNU licence.
++ */
++
++/**
++ * @file mali_kbase_config_platform.h
++ * 声明 platform_config_of_rk (platform_rk 的 platform_config).
++ */
++
++/**
++ * Maximum frequency GPU will be clocked at.
++ * Given in kHz.
++ * This must be specified as there is no default value.
++ *
++ * Attached value: number in kHz
++ * Default value: NA
++ */
++#define GPU_FREQ_KHZ_MAX (5000)
++
++/**
++ * Minimum frequency GPU will be clocked at.
++ * Given in kHz.
++ * This must be specified as there is no default value.
++ *
++ * Attached value: number in kHz
++ * Default value: NA
++ */
++#define GPU_FREQ_KHZ_MIN (5000)
++
++/**
++ * CPU_SPEED_FUNC
++ * - A pointer to a function that calculates the CPU clock
++ *
++ * CPU clock speed of the platform is in MHz
++ * - see kbase_cpu_clk_speed_func for the function prototype.
++ *
++ * Attached value: A kbase_cpu_clk_speed_func.
++ * Default Value:  NA
++ */
++#define CPU_SPEED_FUNC (NULL)
++
++/**
++ * GPU_SPEED_FUNC
++ * - A pointer to a function that calculates the GPU clock
++ *
++ * GPU clock speed of the platform in MHz
++ * - see kbase_gpu_clk_speed_func for the function prototype.
++ *
++ * Attached value: A kbase_gpu_clk_speed_func.
++ * Default Value:  NA
++ */
++#define GPU_SPEED_FUNC (NULL)
++
++/**
++ * Power management configuration
++ *
++ * Attached value:
++ *	pointer to @ref kbase_pm_callback_conf
++ * Default value:
++ *	See @ref kbase_pm_callback_conf
++ */
++#define POWER_MANAGEMENT_CALLBACKS (&pm_callbacks)
++extern struct kbase_pm_callback_conf pm_callbacks;
++
++/**
++ * Platform specific configuration functions
++ *
++ * Attached value:
++ *	pointer to @ref kbase_platform_funcs_conf
++ * Default value:
++ *	See @ref kbase_platform_funcs_conf
++ */
++#define PLATFORM_FUNCS (&platform_funcs)
++extern struct kbase_platform_funcs_conf platform_funcs;
++
++/**
++ * Secure mode switch
++ *
++ * Attached value: pointer to @ref kbase_secure_ops
++ */
++#define SECURE_CALLBACKS (NULL)
++
+diff --git a/drivers/gpu/arm/midgard/platform/rk/mali_kbase_config_rk.c b/drivers/gpu/arm/midgard/platform/rk/mali_kbase_config_rk.c
+new file mode 100755
+index 0000000..9514daf
+--- /dev/null
++++ b/drivers/gpu/arm/midgard/platform/rk/mali_kbase_config_rk.c
+@@ -0,0 +1,263 @@
++/*
++ *
++ * (C) COPYRIGHT ARM Limited. All rights reserved.
++ *
++ * This program is free software and is provided to you under the terms of the
++ * GNU General Public License version 2 as published by the Free Software
++ * Foundation, and any use by you of this program is subject to the terms
++ * of such GNU licence.
++ */
++
++/* #define ENABLE_DEBUG_LOG */
++#include "custom_log.h"
++
++#include <mali_kbase.h>
++#include <mali_kbase_defs.h>
++#include <mali_kbase_config.h>
++
++#include <linux/pm_runtime.h>
++#include <linux/suspend.h>
++
++#include "mali_kbase_rk.h"
++
++/**
++ * @file mali_kbase_config_rk.c
++ * 对 platform_config_of_rk 的具体实现.
++ *
++ * mali_device_driver 包含两部分 :
++ *      .DP : platform_dependent_part_in_mdd :
++ *		依赖 platform 部分,
++ *		源码在 <mdd_src_dir>/platform/<platform_name>/
++ *		在 mali_device_driver 内部,
++ *			记为 platform_dependent_part,
++ *			也被记为 platform_specific_code.
++ *      .DP : common_parts_in_mdd :
++ *		arm 实现的通用的部分,
++ *		源码在 <mdd_src_dir>/ 下.
++ *		在 mali_device_driver 内部, 记为 common_parts.
++ */
++
++/*---------------------------------------------------------------------------*/
++
++static int rk_pm_enable_regulator(struct kbase_device *kbdev);
++
++static void rk_pm_disable_regulator(struct kbase_device *kbdev);
++
++static int rk_pm_enable_clk(struct kbase_device *kbdev);
++
++static void rk_pm_disable_clk(struct kbase_device *kbdev);
++
++/*---------------------------------------------------------------------------*/
++
++static int kbase_platform_rk_init(struct kbase_device *kbdev)
++{
++	struct rk_context *platform;
++
++	platform = kzalloc(sizeof(*platform), GFP_KERNEL);
++	if (!platform) {
++		E("err.");
++		return -ENOMEM;
++	}
++
++	platform->is_powered = false;
++
++	kbdev->platform_context = (void *)platform;
++
++	return 0;
++}
++
++static void kbase_platform_rk_term(struct kbase_device *kbdev)
++{
++}
++
++struct kbase_platform_funcs_conf platform_funcs = {
++	.platform_init_func = &kbase_platform_rk_init,
++	.platform_term_func = &kbase_platform_rk_term,
++};
++
++/*---------------------------------------------------------------------------*/
++
++static int rk_pm_callback_runtime_on(struct kbase_device *kbdev)
++{
++	return 0;
++}
++
++static void rk_pm_callback_runtime_off(struct kbase_device *kbdev)
++{
++}
++
++static int rk_pm_callback_power_on(struct kbase_device *kbdev)
++{
++	int ret = 1; /* Assume GPU has been powered off */
++	int err = 0;
++	struct rk_context *platform;
++
++	platform = (struct rk_context *)kbdev->platform_context;
++	if (platform->is_powered) {
++		W("mali_device is already powered.");
++		return 0;
++	}
++
++	D("powering on.");
++
++	/* we must enable vdd_gpu before pd_gpu_in_chip. */
++	err = rk_pm_enable_regulator(kbdev);
++	if (err) {
++		E("fail to enable regulator, err : %d.", err);
++		return err;
++	}
++
++	/* 若 mali_dev 的 runtime_pm 是 enabled 的, 则... */
++	if (pm_runtime_enabled(kbdev->dev)) {
++		D("to resume mali_dev syncly.");
++		/* 对 pd_in_chip 的 on 操作,
++		 * 将在 pm_domain 的 runtime_pm_callbacks 中完成.
++		 */
++		err = pm_runtime_get_sync(kbdev->dev);
++		if (err < 0) {
++			E("failed to runtime resume device: %d.", err);
++			return err;
++		} else if (err == 1) { /* runtime_pm_status is still active */
++			D("chip has NOT been powered off, no need to re-init.");
++			ret = 0;
++		}
++	}
++
++	err = rk_pm_enable_clk(kbdev); /* clk is not relative to pd. */
++	if (err) {
++		E("failed to enable clk: %d", err);
++		return err;
++	}
++
++	platform->is_powered = true;
++	KBASE_TIMELINE_GPU_POWER(kbdev, 1);
++
++	return ret;
++}
++
++static void rk_pm_callback_power_off(struct kbase_device *kbdev)
++{
++	struct rk_context *platform =
++		(struct rk_context *)kbdev->platform_context;
++
++	if (!platform->is_powered) {
++		W("mali_dev is already powered off.");
++		return;
++	}
++
++	D("powering off.");
++
++	platform->is_powered = false;
++	KBASE_TIMELINE_GPU_POWER(kbdev, 0);
++
++	rk_pm_disable_clk(kbdev);
++
++	if (pm_runtime_enabled(kbdev->dev)) {
++		pm_runtime_mark_last_busy(kbdev->dev);
++		D("to put_sync_suspend mali_dev.");
++		pm_runtime_put_sync_suspend(kbdev->dev);
++	}
++
++	rk_pm_disable_regulator(kbdev);
++}
++
++int rk_kbase_device_runtime_init(struct kbase_device *kbdev)
++{
++	pm_runtime_set_autosuspend_delay(kbdev->dev, 200);
++	pm_runtime_use_autosuspend(kbdev->dev);
++
++	/* no need to call pm_runtime_set_active here. */
++
++	D("to enable pm_runtime.");
++	pm_runtime_enable(kbdev->dev);
++
++	return 0;
++}
++
++void rk_kbase_device_runtime_disable(struct kbase_device *kbdev)
++{
++	D("to disable pm_runtime.");
++	pm_runtime_disable(kbdev->dev);
++}
++
++struct kbase_pm_callback_conf pm_callbacks = {
++	.power_on_callback = rk_pm_callback_power_on,
++	.power_off_callback = rk_pm_callback_power_off,
++#ifdef CONFIG_PM
++	.power_runtime_init_callback = rk_kbase_device_runtime_init,
++	.power_runtime_term_callback = rk_kbase_device_runtime_disable,
++	.power_runtime_on_callback = rk_pm_callback_runtime_on,
++	.power_runtime_off_callback = rk_pm_callback_runtime_off,
++#else				/* CONFIG_PM */
++	.power_runtime_init_callback = NULL,
++	.power_runtime_term_callback = NULL,
++	.power_runtime_on_callback = NULL,
++	.power_runtime_off_callback = NULL,
++#endif				/* CONFIG_PM */
++};
++
++int kbase_platform_early_init(void)
++{
++	/* Nothing needed at this stage */
++	return 0;
++}
++
++/*---------------------------------------------------------------------------*/
++
++static int rk_pm_enable_regulator(struct kbase_device *kbdev)
++{
++	int ret = 0;
++
++	if (!kbdev->regulator) {
++		W("no mali regulator control, no need to enable.");
++		goto EXIT;
++	}
++
++	D("to enable regulator.");
++	ret = regulator_enable(kbdev->regulator);
++	if (ret) {
++		E("fail to enable regulator, ret : %d.", ret);
++		goto EXIT;
++	}
++
++EXIT:
++	return ret;
++}
++
++static void rk_pm_disable_regulator(struct kbase_device *kbdev)
++{
++	if (!(kbdev->regulator)) {
++		W("no mali regulator control, no need to disable.");
++		return;
++	}
++
++	D("to disable regulator.");
++	regulator_disable(kbdev->regulator);
++}
++
++static int rk_pm_enable_clk(struct kbase_device *kbdev)
++{
++	int err = 0;
++
++	if (!(kbdev->clock)) {
++		W("no mali clock control, no need to enable.");
++	} else {
++		D("to enable clk.");
++		err = clk_enable(kbdev->clock);
++		if (err)
++			E("failed to enable clk: %d.", err);
++	}
++
++	return err;
++}
++
++static void rk_pm_disable_clk(struct kbase_device *kbdev)
++{
++	if (!(kbdev->clock)) {
++		W("no mali clock control, no need to disable.");
++	} else {
++		D("to disable clk.");
++		clk_disable(kbdev->clock);
++	}
++}
++
+diff --git a/drivers/gpu/arm/midgard/platform/rk/mali_kbase_rk.h b/drivers/gpu/arm/midgard/platform/rk/mali_kbase_rk.h
+new file mode 100644
+index 0000000..a4ebd50
+--- /dev/null
++++ b/drivers/gpu/arm/midgard/platform/rk/mali_kbase_rk.h
+@@ -0,0 +1,30 @@
++/* drivers/gpu/t6xx/kbase/src/platform/rk/mali_kbase_platform.h
++ * Rockchip SoC Mali-Midgard platform-dependent codes
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software FoundatIon.
++ */
++
++/**
++ * @file mali_kbase_rk.h
++ *
++ * defines work_context type of platform_dependent_part.
++ */
++
++#ifndef _MALI_KBASE_RK_H_
++#define _MALI_KBASE_RK_H_
++
++/*---------------------------------------------------------------------------*/
++
++/**
++ * struct rk_context - work_context of platform_dependent_part_of_rk.
++ * @is_powered: record the status
++ *      of common_parts calling 'power_on_callback' and 'power_off_callback'.
++ */
++struct rk_context {
++	bool is_powered;
++};
++
++#endif				/* _MALI_KBASE_RK_H_ */
++
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 3c20af9..4ff65e3 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -20,6 +20,8 @@ source "drivers/gpu/ipu-v3/Kconfig"
+ 
+ source "drivers/gpu/drm/Kconfig"
+ 
++source "drivers/gpu/arm/midgard/Kconfig"
++
+ menu "Frame buffer Devices"
+ source "drivers/video/fbdev/Kconfig"
+ endmenu
+-- 
+2.4.10
+
