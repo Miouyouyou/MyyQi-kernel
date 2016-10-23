@@ -1,5 +1,7 @@
 You're welcome to fork this repository and host your own configuration file.
+
 **Change the value MYGITTREE in the following script if you forked this repository.**
+
 Remember to remove the CROSS_COMPILE line if you're compiling from the same ARM system you intend to boot from.
 
 Here's how to prepare and compile a recent official kernel, with Mali Kernel space drivers (but no UMP support as it fails to compile), for a RK3288 MiQi device:
@@ -52,6 +54,6 @@ TODO
 ----
 
 - [ ] Document how to use the generated kernel and boot it
-- [*] Add the [Open Source Kernel-space Mali Midgard drivers](http://malideveloper.arm.com/resources/drivers/open-source-mali-midgard-gpu-kernel-drivers/)
+- [x] Add the [Open Source Kernel-space Mali Midgard drivers](http://malideveloper.arm.com/resources/drivers/open-source-mali-midgard-gpu-kernel-drivers/)
 - [ ] Add [gator](https://github.com/ARM-software/gator)
 - [ ] Document how to use [DS-5 : Streamline](https://developer.arm.com/products/software-development-tools/ds-5-development-studio/streamline/overview) to analyse OpenGL ES 2.x/3.x programs running on MiQi boards using such kernels.
