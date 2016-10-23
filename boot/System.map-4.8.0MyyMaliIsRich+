@@ -75507,7 +75507,7 @@ c10af524 T __security_initcall_start
 c10af528 T __initramfs_start
 c10af528 t __irf_start
 c10af528 T __security_initcall_end
-c10af5ad t __irf_end
+c10af5ae t __irf_end
 c10af5b0 T __initramfs_size
 c10b0000 D __per_cpu_load
 c10b0000 D __per_cpu_start
