@@ -1,3 +1,17 @@
+New versions at
+---------------
+
+If you're looking for recent versions of cross-compilation scripts, patches and prebuilt kernels for RK3288 boards, use either :
+- [**MyyQi**](https://github.com/Miouyouyou/MyyQi) for 4.12.0 kernels with r17p0 Mali Midgard kernel drivers
+- [**RockMyy**](https://github.com/Miouyouyou/RockMyy) and [**RockMyy-Build**](https://github.com/Miouyouyou/RockMyy-Build) for 4.13.0-rcX and onward kernels with r19p0 Mali Midgard kernel drivers.
+
+Due to these new repositories, this repository is not maintained anymore.
+
+About
+-----
+
+This was my first attempt at generating a script that would download, patch and cross-compile mainline kernels, while including the latest official Mali Midgard kernel drivers.
+
 You're welcome to fork this repository and host your own configuration file.
 
 **Change the value MYGITTREE in the following script if you forked this repository.**
@@ -13,7 +27,7 @@ git clone --depth 1 --branch v4.8 'git://git.kernel.org/pub/scm/linux/kernel/git
 cd linux
 # Download, prepare and copy the Mali Kernel-Space drivers. 
 # Some TGZ are AWFULLY packaged...
-wget 'http://malideveloper.arm.com/downloads/drivers/TX011/r14p0-01rel0/TX011-SW-99002-r14p0-01rel0.tgz'
+wget 'https://developer.arm.com/-/media/Files/downloads/mali-drivers/kernel/mali-midgard-gpu/TX011-SW-99002-r14p0-01rel0.tgz'
 tar zxvf TX011-SW-99002-r14p0-01rel0.tgz
 cd TX011-SW-99002-r14p0-01rel0
 find . -type 'f' -exec chmod 0644 {} ';'
